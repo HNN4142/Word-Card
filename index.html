@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英単語アプリ</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1em; padding: 0; }
+    input, button { padding: 0.5em; font-size: 1em; width: 100%; margin-bottom: 1em; }
+    .output { margin-top: 1em; }
+    .result, .count { margin-bottom: 1em; }
+    ul { padding: 0; list-style: none; }
+    li { margin-bottom: 0.5em; background: #f0f0f0; padding: 0.5em; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+    .history-buttons button { margin-left: 0.3em; }
+    @media (min-width: 600px) {
+      input, button { width: auto; display: inline-block; margin-right: 0.5em; }
+    }
+  </style>
+</head>
+<body>
+  <h1>英単語アプリ</h1>
+  <input type="text" id="wordInput" placeholder="単語を入力">
+  <button onclick="searchWord()">検索</button>
+
+  <div class="output">
+    <div id="count" class="count"></div>
+    <div id="result" class="result"></div>
+    <h2>検索履歴</h2>
+    <ul id="history"></ul>
+  </div>
+
+  <script>
+    async function searchWord(wordFromHistory = null) {
+      const word = wordFromHistory || document.getElementById('wordInput').value.trim();
+      if (!word) return;
+
+      // localStorageで検索回数をカウント
+      let count = localStorage.getItem(word) ? parseInt(localStorage.getItem(word)) : 0;
+      count++;
+      localStorage.setItem(word, count);
+      document.getElementById('count').innerText = `"${word}" の検索回数: ${count}`;
+
+      updateHistory();
+
+      try {
+        const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        if (!dictResponse.ok) {
+          document.getElementById('result').innerText = '単語が見つかりませんでした。';
+          return;
+        }
+        const dictData = await dictResponse.json();
+        const definition = dictData[0].meanings[0].definitions[0].definition;
+        const example = dictData[0].meanings[0].definitions[0].example || '例文はありません';
+        const phonetics = dictData[0].phonetics[0]?.text || '';
+        const audio = dictData[0].phonetics[0]?.audio || '';
+
+        const translationResponse = await fetch('https://libretranslate.de/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: definition,
+            source: 'en',
+            target: 'ja',
+            format: "text"
+          })
+        });
+        const translationData = await translationResponse.json();
+        const japaneseDefinition = translationData.translatedText;
+
+        const audioHTML = audio ? `<audio controls src="${audio}"></audio>` : '';
+
+        const finalOutput = `
+          <p><strong>【発音記号】</strong> ${phonetics}</p>
+          <p><strong>【英語の意味】</strong> ${definition}</p>
+          <p><strong>【日本語の意味】</strong> ${japaneseDefinition}</p>
+          <p><strong>【例文】</strong> ${example}</p>
+          ${audioHTML}
+        `;
+        document.getElementById('result').innerHTML = finalOutput;
+      } catch (error) {
+        console.error(error);
+        document.getElementById('result').innerText = 'エラーが発生しました。';
+      }
+    }
+
+    function updateHistory() {
+      const historyList = document.getElementById('history');
+      historyList.innerHTML = '';
+      const keys = Object.keys(localStorage).sort();
+      keys.forEach(key => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${key} (${localStorage.getItem(key)})</span>
+          <span class="history-buttons">
+            <button onclick="searchWord('${key}')">再検索</button>
+            <button onclick="editWord('${key}')">編集</button>
+            <button onclick="deleteWord('${key}')">削除</button>
+          </span>
+        `;
+        historyList.appendChild(li);
+      });
+    }
+
+    function deleteWord(word) {
+      localStorage.removeItem(word);
+      updateHistory();
+    }
+
+    function editWord(word) {
+      const newWord = prompt('新しい単語を入力してください：', word);
+      if (newWord && newWord !== word) {
+        const count = localStorage.getItem(word);
+        localStorage.removeItem(word);
+        localStorage.setItem(newWord, count);
+        updateHistory();
+      }
+    }
+
+    window.onload = updateHistory;
+  </script>
+</body>
+</html>
