@@ -1,129 +1,127 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英単語アプリ</title>
+  <title>Local Vocabulary Manager</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 1em; padding: 0; }
-    input, button { padding: 0.5em; font-size: 1em; width: 100%; margin-bottom: 1em; }
-    .output { margin-top: 1em; }
-    .result, .count { margin-bottom: 1em; }
-    ul { padding: 0; list-style: none; }
-    li { margin-bottom: 0.5em; background: #f0f0f0; padding: 0.5em; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-    .history-buttons button { margin-left: 0.3em; }
+    body { font-family: Arial, sans-serif; padding: 1em; margin: 0; background: #f9f9f9; }
+    h1, h2 { color: #333; }
+    input, textarea, button { font-size: 1em; margin-bottom: 1em; width: 100%; padding: 0.5em; border-radius: 5px; border: 1px solid #ccc; }
+    .word-list { margin-top: 2em; }
+    .word-entry { background: #fff; margin-bottom: 1em; padding: 1em; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .word-entry h3 { margin-top: 0; }
+    .buttons { margin-top: 0.5em; }
+    .buttons button { margin-right: 0.5em; }
     @media (min-width: 600px) {
-      input, button { width: auto; display: inline-block; margin-right: 0.5em; }
+      input, textarea, button { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <h1>英単語アプリ</h1>
-  <input type="text" id="wordInput" placeholder="単語を入力">
-  <button onclick="searchWord()">検索</button>
+  <h1>Local Vocabulary Manager</h1>
 
-  <div class="output">
-    <div id="count" class="count"></div>
-    <div id="result" class="result"></div>
-    <h2>検索履歴</h2>
-    <ul id="history"></ul>
-  </div>
+  <h2>Add a New Word</h2>
+  <input id="wordInput" placeholder="Word">
+  <input id="meaningEnInput" placeholder="English meaning">
+  <input id="meaningJaInput" placeholder="Japanese meaning">
+  <input id="phoneticInput" placeholder="Phonetic transcription">
+  <textarea id="exampleInput" placeholder="Example sentence"></textarea>
+  <button onclick="addWord()">Add Word</button>
+
+  <h2>Search for a Word</h2>
+  <input id="searchInput" placeholder="Enter word to search">
+  <button onclick="searchWord()">Search</button>
+  <div id="searchResult"></div>
+
+  <div class="word-list" id="wordList"></div>
 
   <script>
-    const apiKey = 'AIzaSyA59PedFLFyZa83vIIuOVCYJoLttDvCTk8'; // ← あなたのGoogle Cloud Translation APIキーをここに貼ってください
+    let db = JSON.parse(localStorage.getItem('wordDB') || '{}');
 
-    async function searchWord(wordFromHistory = null) {
-      const word = wordFromHistory || document.getElementById('wordInput').value.trim();
-      if (!word) return;
-
-      // 検索回数カウント
-      let count = localStorage.getItem(word) ? parseInt(localStorage.getItem(word)) : 0;
-      count++;
-      localStorage.setItem(word, count);
-      document.getElementById('count').innerText = `"${word}" の検索回数: ${count}`;
-      updateHistory();
-
-      try {
-        // 辞書API
-        const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-        if (!dictResponse.ok) {
-          document.getElementById('result').innerText = '単語が見つかりませんでした。';
-          return;
-        }
-        const dictData = await dictResponse.json();
-        const definition = dictData[0].meanings[0].definitions[0].definition;
-        const example = dictData[0].meanings[0].definitions[0].example || '例文はありません';
-        const phonetics = dictData[0].phonetics[0]?.text || '';
-        const audio = dictData[0].phonetics[0]?.audio || '';
-
-        // Google翻訳API
-        const translationResponse = await fetch(
-          `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              q: definition,
-              source: 'en',
-              target: 'ja',
-              format: 'text'
-            })
-        });
-        const translationData = await translationResponse.json();
-        const japaneseDefinition = translationData.data.translations[0].translatedText;
-
-        const audioHTML = audio ? `<audio controls src="${audio}"></audio>` : '';
-
-        // 表示
-        const finalOutput = `
-          <p><strong>【発音記号】</strong> ${phonetics}</p>
-          <p><strong>【英語の意味】</strong> ${definition}</p>
-          <p><strong>【日本語の意味】</strong> ${japaneseDefinition}</p>
-          <p><strong>【例文】</strong> ${example}</p>
-          ${audioHTML}
-        `;
-        document.getElementById('result').innerHTML = finalOutput;
-      } catch (error) {
-        console.error(error);
-        document.getElementById('result').innerText = 'エラーが発生しました。';
-      }
+    function saveDB() {
+      localStorage.setItem('wordDB', JSON.stringify(db));
     }
 
-    function updateHistory() {
-      const historyList = document.getElementById('history');
-      historyList.innerHTML = '';
-      const keys = Object.keys(localStorage).sort();
-      keys.forEach(key => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span>${key} (${localStorage.getItem(key)})</span>
-          <span class="history-buttons">
-            <button onclick="searchWord('${key}')">再検索</button>
-            <button onclick="editWord('${key}')">編集</button>
-            <button onclick="deleteWord('${key}')">削除</button>
-          </span>
+    function addWord() {
+      const word = document.getElementById('wordInput').value.trim();
+      if (!word) return;
+      db[word] = db[word] || { count: 0 };
+      db[word].meaningEn = document.getElementById('meaningEnInput').value;
+      db[word].meaningJa = document.getElementById('meaningJaInput').value;
+      db[word].example = document.getElementById('exampleInput').value;
+      db[word].phonetic = document.getElementById('phoneticInput').value;
+      saveDB();
+      alert('Word added successfully!');
+      renderWordList();
+    }
+
+    function searchWord() {
+      const word = document.getElementById('searchInput').value.trim();
+      const result = document.getElementById('searchResult');
+      if (db[word]) {
+        db[word].count = (db[word].count || 0) + 1;
+        saveDB();
+        result.innerHTML = `
+          <div class="word-entry">
+            <h3>${word}</h3>
+            <p><strong>English meaning:</strong> ${db[word].meaningEn}</p>
+            <p><strong>Japanese meaning:</strong> ${db[word].meaningJa}</p>
+            <p><strong>Phonetic:</strong> ${db[word].phonetic}</p>
+            <p><strong>Example:</strong> ${db[word].example}</p>
+            <p><strong>Search count:</strong> ${db[word].count}</p>
+          </div>
         `;
-        historyList.appendChild(li);
+      } else {
+        result.innerHTML = '<p>Word not found.</p>';
+      }
+      renderWordList();
+    }
+
+    function renderWordList() {
+      const list = document.getElementById('wordList');
+      list.innerHTML = '';
+      Object.keys(db).sort().forEach(word => {
+        const entry = document.createElement('div');
+        entry.className = 'word-entry';
+        entry.innerHTML = `
+          <h3>${word}</h3>
+          <p>English meaning: ${db[word].meaningEn}</p>
+          <p>Japanese meaning: ${db[word].meaningJa}</p>
+          <p>Search count: ${db[word].count || 0}</p>
+          <div class="buttons">
+            <button onclick="editWord('${word}')">Edit</button>
+            <button onclick="deleteWord('${word}')">Delete</button>
+            <button onclick="searchWordFromList('${word}')">Search Again</button>
+          </div>
+        `;
+        list.appendChild(entry);
       });
     }
 
-    function deleteWord(word) {
-      localStorage.removeItem(word);
-      updateHistory();
+    function editWord(word) {
+      document.getElementById('wordInput').value = word;
+      document.getElementById('meaningEnInput').value = db[word].meaningEn;
+      document.getElementById('meaningJaInput').value = db[word].meaningJa;
+      document.getElementById('phoneticInput').value = db[word].phonetic;
+      document.getElementById('exampleInput').value = db[word].example;
     }
 
-    function editWord(word) {
-      const newWord = prompt('新しい単語を入力してください：', word);
-      if (newWord && newWord !== word) {
-        const count = localStorage.getItem(word);
-        localStorage.removeItem(word);
-        localStorage.setItem(newWord, count);
-        updateHistory();
+    function deleteWord(word) {
+      if (confirm(`Are you sure you want to delete "${word}"?`)) {
+        delete db[word];
+        saveDB();
+        renderWordList();
+        document.getElementById('searchResult').innerHTML = '';
       }
     }
 
-    window.onload = updateHistory;
+    function searchWordFromList(word) {
+      document.getElementById('searchInput').value = word;
+      searchWord();
+    }
+
+    renderWordList();
   </script>
 </body>
 </html>
