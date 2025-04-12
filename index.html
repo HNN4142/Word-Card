@@ -24,10 +24,12 @@
 
     #searchButton {
       color: #4169e1; /* royalblue */
+      font-weight: bold;
     }
 
     #importButton {
       color: #ff8c00; /* darkorange */
+      font-weight: bold;
     }
 
     .entry {
@@ -50,16 +52,16 @@
 </head>
 <body>
 
-  <h1>Search for a Word</h1>
+  <h1>Search for a Word 🔍</h1>
 
   <section id="searchSection">
     <label for="searchInput">Enter word to search</label>
     <input type="text" id="searchInput" placeholder="e.g. happy" />
-    <button id="searchButton" onclick="searchWord()">Search 🔍</button>
+    <button id="searchButton" onclick="searchWord()">Search</button>
     <p id="searchCount"></p>
   </section>
 
-  <h1>Add a New Word</h1>
+  <h1>Add a New Word 🔤</h1>
   <label for="wordInput">Add to new word</label>
   <input type="text" id="wordInput" />
 
@@ -75,7 +77,7 @@
   <label for="phonetic">Phonetic</label>
   <input type="text" id="phonetic" />
 
-  <button id="addButton" onclick="addWord()">Add to new word ➕</button>
+  <button id="addButton" onclick="addWord()">Add to new word</button>
 
   <h1>File Import ⬆️</h1>
   <label for="importFile">Import from JSON</label>
