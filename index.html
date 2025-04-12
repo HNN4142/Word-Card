@@ -1,127 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local Vocabulary Manager</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Manager App</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 1em; margin: 0; background: #f9f9f9; }
-    h1, h2 { color: #333; }
-    input, textarea, button { font-size: 1em; margin-bottom: 1em; width: 100%; padding: 0.5em; border-radius: 5px; border: 1px solid #ccc; }
-    .word-list { margin-top: 2em; }
-    .word-entry { background: #fff; margin-bottom: 1em; padding: 1em; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-    .word-entry h3 { margin-top: 0; }
-    .buttons { margin-top: 0.5em; }
-    .buttons button { margin-right: 0.5em; }
-    @media (min-width: 600px) {
-      input, textarea, button { width: 100%; }
+    body { font-family: Arial, sans-serif; padding: 1em; max-width: 600px; margin: auto; }
+    h1, h2 { text-align: center; }
+    label { display: block; margin-top: 1em; font-weight: bold; }
+    input, textarea, button {
+      width: 100%;
+      padding: 0.5em;
+      margin-top: 0.3em;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    button { margin-top: 1em; cursor: pointer; }
+    #addButton {
+      color: #2e8b57;
+      font-weight: bold;
+    }
+    .entry {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 1em;
+      margin-top: 1em;
+      border-radius: 8px;
+    }
+    .entry-buttons {
+      margin-top: 0.5em;
+      text-align: right;
+    }
+    .entry-buttons button {
+      margin-left: 0.5em;
     }
   </style>
 </head>
 <body>
-  <h1>Local Vocabulary Manager</h1>
+
+  <h1>Search for a Word</h1>
+
+  <section id="searchSection">
+    <label for="searchInput">Enter word to search</label>
+    <input type="text" id="searchInput" placeholder="e.g. happy" />
+    <button onclick="searchWord()">Search</button>
+    <p id="searchCount"></p>
+  </section>
 
   <h2>Add a New Word</h2>
-  <input id="wordInput" placeholder="Word">
-  <input id="meaningEnInput" placeholder="English meaning">
-  <input id="meaningJaInput" placeholder="Japanese meaning">
-  <input id="phoneticInput" placeholder="Phonetic transcription">
-  <textarea id="exampleInput" placeholder="Example sentence"></textarea>
-  <button onclick="addWord()">Add Word</button>
+  <label for="wordInput">Word</label>
+  <input type="text" id="wordInput" />
 
-  <h2>Search for a Word</h2>
-  <input id="searchInput" placeholder="Enter word to search">
-  <button onclick="searchWord()">Search</button>
-  <div id="searchResult"></div>
+  <label for="meaningEn">Meaning (English)</label>
+  <input type="text" id="meaningEn" />
 
-  <div class="word-list" id="wordList"></div>
+  <label for="meaningJa">Meaning (Japanese)</label>
+  <input type="text" id="meaningJa" />
+
+  <label for="example">Example Sentence</label>
+  <textarea id="example"></textarea>
+
+  <label for="phonetic">Phonetic</label>
+  <input type="text" id="phonetic" />
+
+  <button id="addButton" onclick="addWord()">Add Word</button>
+
+  <label for="importFile">Import from JSON</label>
+  <input type="file" id="importFile" accept=".json" />
+  <button onclick="importWords()">Import</button>
+
+  <h2>Your Library</h2>
+  <div id="wordList"></div>
 
   <script>
-    let db = JSON.parse(localStorage.getItem('wordDB') || '{}');
+    const wordDB = JSON.parse(localStorage.getItem('wordDB') || '{}');
+    const searchCounts = JSON.parse(localStorage.getItem('searchCounts') || '{}');
 
     function saveDB() {
-      localStorage.setItem('wordDB', JSON.stringify(db));
+      localStorage.setItem('wordDB', JSON.stringify(wordDB));
+    }
+
+    function saveCounts() {
+      localStorage.setItem('searchCounts', JSON.stringify(searchCounts));
     }
 
     function addWord() {
       const word = document.getElementById('wordInput').value.trim();
-      if (!word) return;
-      db[word] = db[word] || { count: 0 };
-      db[word].meaningEn = document.getElementById('meaningEnInput').value;
-      db[word].meaningJa = document.getElementById('meaningJaInput').value;
-      db[word].example = document.getElementById('exampleInput').value;
-      db[word].phonetic = document.getElementById('phoneticInput').value;
+      const meaningEn = document.getElementById('meaningEn').value.trim();
+      const meaningJa = document.getElementById('meaningJa').value.trim();
+      const example = document.getElementById('example').value.trim();
+      const phonetic = document.getElementById('phonetic').value.trim();
+
+      if (!word) return alert('Word is required.');
+
+      wordDB[word] = { meaningEn, meaningJa, example, phonetic };
       saveDB();
-      alert('Word added successfully!');
-      renderWordList();
+      displayWords();
+    }
+
+    function importWords() {
+      const fileInput = document.getElementById('importFile');
+      const file = fileInput.files[0];
+      if (!file) return alert('Please select a JSON file to import.');
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          for (const word in imported) {
+            wordDB[word] = imported[word];
+          }
+          saveDB();
+          displayWords();
+          alert('Import successful!');
+        } catch (error) {
+          alert('Invalid JSON format.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function displayWords() {
+      const list = document.getElementById('wordList');
+      list.innerHTML = '';
+      Object.keys(wordDB).sort().forEach(word => {
+        const data = wordDB[word];
+        const count = searchCounts[word] || 0;
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.innerHTML = `
+          <strong>${word}</strong> (${count} searches)<br>
+          <em>${data.phonetic}</em><br>
+          <strong>EN:</strong> ${data.meaningEn}<br>
+          <strong>JA:</strong> ${data.meaningJa}<br>
+          <strong>Example:</strong> ${data.example}
+          <div class="entry-buttons">
+            <button onclick="editWord('${word}')">Edit</button>
+            <button onclick="deleteWord('${word}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function deleteWord(word) {
+      delete wordDB[word];
+      delete searchCounts[word];
+      saveDB();
+      saveCounts();
+      displayWords();
+    }
+
+    function editWord(word) {
+      const data = wordDB[word];
+      document.getElementById('wordInput').value = word;
+      document.getElementById('meaningEn').value = data.meaningEn;
+      document.getElementById('meaningJa').value = data.meaningJa;
+      document.getElementById('example').value = data.example;
+      document.getElementById('phonetic').value = data.phonetic;
+      delete wordDB[word];
+      saveDB();
     }
 
     function searchWord() {
       const word = document.getElementById('searchInput').value.trim();
-      const result = document.getElementById('searchResult');
-      if (db[word]) {
-        db[word].count = (db[word].count || 0) + 1;
-        saveDB();
-        result.innerHTML = `
-          <div class="word-entry">
-            <h3>${word}</h3>
-            <p><strong>English meaning:</strong> ${db[word].meaningEn}</p>
-            <p><strong>Japanese meaning:</strong> ${db[word].meaningJa}</p>
-            <p><strong>Phonetic:</strong> ${db[word].phonetic}</p>
-            <p><strong>Example:</strong> ${db[word].example}</p>
-            <p><strong>Search count:</strong> ${db[word].count}</p>
-          </div>
-        `;
-      } else {
-        result.innerHTML = '<p>Word not found.</p>';
-      }
-      renderWordList();
+      if (!word) return;
+      searchCounts[word] = (searchCounts[word] || 0) + 1;
+      saveCounts();
+      const count = searchCounts[word];
+      document.getElementById('searchCount').innerText = `"${word}" has been searched ${count} time(s).`;
+      displayWords();
     }
 
-    function renderWordList() {
-      const list = document.getElementById('wordList');
-      list.innerHTML = '';
-      Object.keys(db).sort().forEach(word => {
-        const entry = document.createElement('div');
-        entry.className = 'word-entry';
-        entry.innerHTML = `
-          <h3>${word}</h3>
-          <p>English meaning: ${db[word].meaningEn}</p>
-          <p>Japanese meaning: ${db[word].meaningJa}</p>
-          <p>Search count: ${db[word].count || 0}</p>
-          <div class="buttons">
-            <button onclick="editWord('${word}')">Edit</button>
-            <button onclick="deleteWord('${word}')">Delete</button>
-            <button onclick="searchWordFromList('${word}')">Search Again</button>
-          </div>
-        `;
-        list.appendChild(entry);
-      });
-    }
-
-    function editWord(word) {
-      document.getElementById('wordInput').value = word;
-      document.getElementById('meaningEnInput').value = db[word].meaningEn;
-      document.getElementById('meaningJaInput').value = db[word].meaningJa;
-      document.getElementById('phoneticInput').value = db[word].phonetic;
-      document.getElementById('exampleInput').value = db[word].example;
-    }
-
-    function deleteWord(word) {
-      if (confirm(`Are you sure you want to delete "${word}"?`)) {
-        delete db[word];
-        saveDB();
-        renderWordList();
-        document.getElementById('searchResult').innerHTML = '';
-      }
-    }
-
-    function searchWordFromList(word) {
-      document.getElementById('searchInput').value = word;
-      searchWord();
-    }
-
-    renderWordList();
+    window.onload = displayWords;
   </script>
 </body>
 </html>
