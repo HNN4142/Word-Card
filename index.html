@@ -1,104 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Word Manager App</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 1em; max-width: 600px; margin: auto; }
-    h1, h2 { text-align: center; }
-    label { display: block; margin-top: 1em; font-weight: bold; }
-    input, textarea, button {
-      width: 100%;
-      padding: 0.5em;
-      margin-top: 0.3em;
-      font-size: 1em;
-      box-sizing: border-box;
-    }
-    button { margin-top: 1em; cursor: pointer; }
-
-    #addButton {
-      color: #2e8b57;
-      font-weight: bold;
-    }
-
-    #searchButton {
-      color: #4169e1;
-      font-weight: bold;
-    }
-
-    #importButton {
-      color: #ff8c00;
-      font-weight: bold;
-    }
-
-    .entry {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 1em;
-      margin-top: 1em;
-      border-radius: 8px;
-    }
-
-    .entry-buttons {
-      margin-top: 0.5em;
-      text-align: right;
-    }
-
-    .entry-buttons button {
-      margin-left: 0.5em;
-    }
-
-    #searchResultDisplay {
-      margin-top: 1em;
-    }
-
-    .search-display-box {
-      background: #f2f2f2;
-      border: 1px solid #ccc;
-      padding: 1em;
-      border-radius: 6px;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>Search for a Word 🔍</h1>
-
-  <section id="searchSection">
-    <label for="searchInput">Enter word to search</label>
-    <input type="text" id="searchInput" placeholder="e.g. happy" />
-    <button id="searchButton" onclick="searchWord()">Search</button>
-    <p id="searchCount"></p>
-    <div id="searchResultDisplay"></div>
-  </section>
-
-  <h1>Add a New Word 🔤</h1>
-  <label for="wordInput">Add to new word</label>
-  <input type="text" id="wordInput" />
-
-  <label for="meaningEn">Meaning (English)</label>
-  <input type="text" id="meaningEn" />
-
-  <label for="meaningJa">Meaning (Japanese)</label>
-  <input type="text" id="meaningJa" />
-
-  <label for="example">Example</label>
-  <textarea id="example"></textarea>
-
-  <label for="phonetic">Phonetic</label>
-  <input type="text" id="phonetic" />
-
-  <button id="addButton" onclick="addWord()">Add to new word</button>
-
-  <h1>File Import ⬆️</h1>
-  <label for="importFile">Import from JSON</label>
-  <input type="file" id="importFile" accept=".json" />
-  <button id="importButton" onclick="importWords()">Import</button>
-
-  <h1>Your Library 📕</h1>
-  <div id="wordList"></div>
-
   <script>
     const wordDB = JSON.parse(localStorage.getItem('wordDB') || '{}');
     const searchCounts = JSON.parse(localStorage.getItem('searchCounts') || '{}');
@@ -187,6 +86,7 @@
       document.getElementById('phonetic').value = data.phonetic;
       delete wordDB[word];
       saveDB();
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // ← スクロール追加
     }
 
     function searchWord() {
@@ -214,6 +114,14 @@
       }
 
       displayWords();
+    }
+
+    function resetData() {
+      if (confirm("Are you sure you want to delete all data?")) {
+        localStorage.removeItem('wordDB');
+        localStorage.removeItem('searchCounts');
+        location.reload();
+      }
     }
 
     window.onload = displayWords;
