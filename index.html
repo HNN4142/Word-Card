@@ -18,17 +18,17 @@
     button { margin-top: 1em; cursor: pointer; }
 
     #addButton {
-      color: #2e8b57; /* seagreen */
+      color: #2e8b57;
       font-weight: bold;
     }
 
     #searchButton {
-      color: #4169e1; /* royalblue */
+      color: #4169e1;
       font-weight: bold;
     }
 
     #importButton {
-      color: #ff8c00; /* darkorange */
+      color: #ff8c00;
       font-weight: bold;
     }
 
@@ -48,6 +48,17 @@
     .entry-buttons button {
       margin-left: 0.5em;
     }
+
+    #searchResultDisplay {
+      margin-top: 1em;
+    }
+
+    .search-display-box {
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      padding: 1em;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -59,6 +70,7 @@
     <input type="text" id="searchInput" placeholder="e.g. happy" />
     <button id="searchButton" onclick="searchWord()">Search</button>
     <p id="searchCount"></p>
+    <div id="searchResultDisplay"></div>
   </section>
 
   <h1>Add a New Word 🔤</h1>
@@ -184,6 +196,23 @@
       saveCounts();
       const count = searchCounts[word];
       document.getElementById('searchCount').innerText = `"${word}" has been searched ${count} time(s).`;
+
+      const display = document.getElementById('searchResultDisplay');
+      if (wordDB[word]) {
+        const data = wordDB[word];
+        display.innerHTML = `
+          <div class="search-display-box">
+            <strong>${word}</strong> (${count} searches)<br>
+            <em>${data.phonetic}</em><br>
+            <strong>EN:</strong> ${data.meaningEn}<br>
+            <strong>JA:</strong> ${data.meaningJa}<br>
+            <strong>Example:</strong> ${data.example}
+          </div>
+        `;
+      } else {
+        display.innerHTML = `<p>No matching word found in your library.</p>`;
+      }
+
       displayWords();
     }
 
