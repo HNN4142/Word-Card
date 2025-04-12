@@ -16,10 +16,20 @@
       box-sizing: border-box;
     }
     button { margin-top: 1em; cursor: pointer; }
+
     #addButton {
-      color: #2e8b57;
+      color: #2e8b57; /* seagreen */
       font-weight: bold;
     }
+
+    #searchButton {
+      color: #4169e1; /* royalblue */
+    }
+
+    #importButton {
+      color: #ff8c00; /* darkorange */
+    }
+
     .entry {
       background: #f9f9f9;
       border: 1px solid #ddd;
@@ -27,10 +37,12 @@
       margin-top: 1em;
       border-radius: 8px;
     }
+
     .entry-buttons {
       margin-top: 0.5em;
       text-align: right;
     }
+
     .entry-buttons button {
       margin-left: 0.5em;
     }
@@ -43,12 +55,12 @@
   <section id="searchSection">
     <label for="searchInput">Enter word to search</label>
     <input type="text" id="searchInput" placeholder="e.g. happy" />
-    <button onclick="searchWord()">Search</button>
+    <button id="searchButton" onclick="searchWord()">Search</button>
     <p id="searchCount"></p>
   </section>
 
-  <h2>Add a New Word</h2>
-  <label for="wordInput">Word</label>
+  <h2>Add a New Word ➕</h2>
+  <label for="wordInput">Add to new word 🔍</label>
   <input type="text" id="wordInput" />
 
   <label for="meaningEn">Meaning (English)</label>
@@ -63,13 +75,13 @@
   <label for="phonetic">Phonetic</label>
   <input type="text" id="phonetic" />
 
-  <button id="addButton" onclick="addWord()">Add Word</button>
+  <button id="addButton" onclick="addWord()">Add to new word 🔍</button>
 
-  <label for="importFile">Import from JSON</label>
+  <label for="importFile">Import from JSON ⬆️</label>
   <input type="file" id="importFile" accept=".json" />
-  <button onclick="importWords()">Import</button>
+  <button id="importButton" onclick="importWords()">Import</button>
 
-  <h2>Your Library</h2>
+  <h2>Your Library 📕</h2>
   <div id="wordList"></div>
 
   <script>
@@ -135,8 +147,8 @@
           <strong>JA:</strong> ${data.meaningJa}<br>
           <strong>Example:</strong> ${data.example}
           <div class="entry-buttons">
-            <button onclick="editWord('${word}')">Edit</button>
-            <button onclick="deleteWord('${word}')">Delete</button>
+            <button onclick="editWord('${word}')">✏️ Edit</button>
+            <button onclick="deleteWord('${word}')">🗑 Delete</button>
           </div>
         `;
         list.appendChild(div);
